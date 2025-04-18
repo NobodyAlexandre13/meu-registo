@@ -1,11 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { View, StyleSheet, Text, FlatList } from "react-native";
-
+import { View, StyleSheet, Text, FlatList, Modal } from "react-native";
 
 import { database } from './src/firebaseConfig';
-import { set, ref } from "firebase/database";
+import { DataSnapshot, onValue, ref } from "firebase/database";
+
 import { 
   useFonts,
   NationalPark_400Regular,
@@ -14,27 +14,46 @@ import {
 } from '@expo-google-fonts/national-park';
 
 import { Loading } from './src/components/Loading';
-import themes from './src/global/themes';
+import themes from './src/global/themes'; 
 import { Button } from './src/components/Button';
 import { Cards } from './src/components/Cards';
+import { Form } from './src/components/Form';
 
+type Registro = {
+  id: string;
+  nome: string;
+  dado: string;
+  data: string;
+};
 
 export default function App() {
-  const [dado, setDado] = useState("");
-  const [carregamento, setCarregamento] = useState(["1","2","3","4","5","6","7","8","9"])
+  const [ visible, setVisible ] = useState(false);
+  const [carregamento, setCarregamento] = useState<Registro[]>([])
+  
+
   const [loadedFonts] = useFonts({
     NationalPark_400Regular,
     NationalPark_500Medium,
     NationalPark_700Bold
   })
 
-  const data = new Date();
+  useEffect(()=>{
+    const buscaRef = ref(database, 'apontamento/meu-registro');
 
-  async function registerNow(){
-      await set(ref(database, `apontamento/${data.toLocaleDateString("pt-BR")}`), {
-          rhumm: dado,
-      })
-  }
+    const unsubscribe = onValue( buscaRef, (snapshot) => {
+      const data = snapshot.val();
+      const lista = Object.entries(data).map(([id, item]: [string, any]) => ({
+        id,
+        nome: item.nome,
+        dado: item.dado,
+        data: item.data,
+      }));
+  
+      setCarregamento(lista);
+    })
+
+    return () => unsubscribe();
+  }, [])
   if(!loadedFonts){
     return(
       <View style={styles.container}>
@@ -56,7 +75,7 @@ export default function App() {
         <View style={styles.areaBtn}>
           <Button 
             title='Adicionar novo' 
-            onPress={()=> {}}
+            onPress={() => setVisible(true)}
             color={themes.colors.shape}
             size={26}
             opacity={0.6}
@@ -66,15 +85,25 @@ export default function App() {
       <View style={styles.areaCard}>
         <FlatList
           data={carregamento}
-          renderItem={({item}) => <Cards nome='Número de telefone' dado='926224888'/>}
+          renderItem={({item}) => <Cards date={ item }/>}
           ListEmptyComponent={
             <Text style={{ fontSize: 16, color: themes.colors.text, textAlign: 'center' }}>
-                Nenhum carregamento feito ainda.
+                Nenhum cadastro feito ainda.
             </Text>
           }
           showsVerticalScrollIndicator={false}
         />
       </View>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={visible}
+      >
+        <View style={styles.areaModal}>
+          <Form onPress={() => setVisible(false)} />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -111,5 +140,10 @@ const styles = StyleSheet.create({
   areaCard: {
     paddingHorizontal: 24,
     paddingVertical: 18
+  },
+  areaModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'flex-end'
   }
 });
