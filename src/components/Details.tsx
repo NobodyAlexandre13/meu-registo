@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { database } from "../firebaseConfig";
-import { set, ref } from "firebase/database";
+import { set, ref, remove, onValue, update } from "firebase/database";
 
 import 'react-native-get-random-values';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,10 +13,11 @@ import themes from "../global/themes";
 import { ButtonCloser } from "./ButtonCloser";
 
 type BtnProps = {
+    idMembers: string,
     onPress: () => void,
 }
 
-export function Form ( {onPress} : BtnProps ){
+export function Details ( { idMembers, onPress } : BtnProps ){
     const [ titulo, setTitulo ] = useState("");
     const [ dado, setDado ] = useState("");
     const [ alert, setAlert ] = useState("");
@@ -24,7 +25,32 @@ export function Form ( {onPress} : BtnProps ){
     const data = new Date();
     const id = uuidv4();
 
-    async function registerNow(){
+    useEffect(() => {
+        const buscaRef = ref(database, `apontamento/meu-registro/${idMembers}`);
+        
+            const unsubscribe = onValue( buscaRef, (snapshot) => {
+              const data = snapshot.val();
+
+              setTitulo(data.nome);
+              setDado(data.dado);
+            })
+        
+            return () => unsubscribe();
+    }, [])
+
+    const handleDelete = (id: string) => {
+        const registroRef = ref(database, `apontamento/meu-registro/${id}`);
+        try{
+            remove(registroRef);
+            Alert.alert('Registro eliminado!');
+            onPress();
+
+        }catch (error) {
+            console.error('Erro ao eliminar:', error);
+        }
+    };
+
+    async function updateNow(){
         if (titulo === "" || dado === "") {
             setAlert("Preencha os campos todos");
             return;
@@ -36,10 +62,9 @@ export function Form ( {onPress} : BtnProps ){
             return;
         }
         try {
-            await set(ref(database, `apontamento/meu-registro/${id}`), {
+            await update(ref(database, `apontamento/meu-registro/${idMembers}`), {
               nome: titulo,
-              dado: dado,
-              data: data.toLocaleDateString("pt-BR"),
+              dado: dado
             });
         
             onPress();
@@ -48,11 +73,23 @@ export function Form ( {onPress} : BtnProps ){
             Alert.alert("Erro", "Não foi possível salvar os dados. Tenta novamente mais tarde.");
         }
     }
+
     return(
         <View style={formStyle.form}>
             <View style={formStyle.areaText}>
-                <Text style={formStyle.title}>Adicionar novo</Text>
-                <Text style={formStyle.subTitle}>Aponta sem papel e sem lapiseira</Text>
+                <View>
+                    <Text style={formStyle.title}>Adicionar novo</Text>
+                    <Text style={formStyle.subTitle}>Aponta sem papel e sem lapiseira</Text>
+                </View>
+                <View style={formStyle.out}>
+                    <ButtonCloser 
+                        title=''
+                        onPress={onPress}
+                        color={themes.colors.shape}
+                        size={26}
+                        opacity={0.6}
+                    />
+                </View>
             </View>
             <Text style={formStyle.alert}>{alert}</Text>
             <TextInput
@@ -70,8 +107,8 @@ export function Form ( {onPress} : BtnProps ){
             <View style={formStyle.flex}>
                 <View style={formStyle.add}>
                     <Button
-                        title='Cadastrar' 
-                        onPress={registerNow}
+                        title='Atualizar' 
+                        onPress={updateNow}
                         color={themes.colors.shape}
                         size={26}
                         opacity={0.6}
@@ -79,8 +116,8 @@ export function Form ( {onPress} : BtnProps ){
                 </View>
                 <View style={formStyle.closer}>
                     <ButtonCloser 
-                        title='Cancelar'
-                        onPress={onPress}
+                        title='Eliminar'
+                        onPress={() => handleDelete(idMembers)}
                         color={themes.colors.shape}
                         size={26}
                         opacity={0.6}
@@ -116,7 +153,10 @@ const formStyle = StyleSheet.create({
         fontFamily: themes.fonts.medium
     },
     areaText: {
-        marginBottom: 14
+        marginBottom: 14,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
     },
     input: {
         width: '100%',
@@ -138,5 +178,8 @@ const formStyle = StyleSheet.create({
     },
     closer: {
         width: '40%'
+    },
+    out: {
+        width: 40
     }
 })

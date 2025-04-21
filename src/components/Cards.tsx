@@ -7,30 +7,38 @@ import themes from "../global/themes";
 
 type Props = {
    date: { 
+    id: string;
     nome: string;
     dado: string;
     data: string;
-   }
+   },
+   onPress: (id: string) => void
 }
-export function Cards( {date} : Props ) {
+export function Cards( {date, onPress} : Props ) {
 
     async function  copy() {
         await clipboard.setStringAsync(date.dado);
     }
 
     return(
-        <View style={cards.areaCards} >
-            <View>
-                <Text style={cards.tituloCards} >{date.nome}</Text>
-                <Text style={cards.dateCards} >{date.dado}</Text>
+        <TouchableOpacity onPress={() => onPress(date.id)}>
+            <View style={cards.areaCards} >
+                <View>
+                    <Text style={[cards.dataTime, { maxWidth: 100 }]} >{date.nome}</Text>
+                    <Text 
+                        style={cards.dateCards}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                    >{date.dado}</Text>
+                </View>
+                <View style={cards.center}>
+                    <TouchableOpacity onPress={copy}>
+                        <MaterialIcons name="content-copy" size={24} color="black" />
+                    </TouchableOpacity>
+                    <Text style={cards.dataTime} >{date.data}</Text>
+                </View>
             </View>
-            <View style={cards.center}>
-                <TouchableOpacity onPress={copy}>
-                    <MaterialIcons name="content-copy" size={24} color="black" />
-                </TouchableOpacity>
-                <Text style={cards.dataTime} >{date.data}</Text>
-            </View>
-        </View>
+        </TouchableOpacity>
     )
 }
 
@@ -55,7 +63,7 @@ const cards = StyleSheet.create({
     dateCards: {
         fontFamily: themes.fonts.medium,
         color: themes.colors.title,
-        fontSize: 18
+        fontSize: 18,
     },
     dataTime: {
         fontSize: 10,

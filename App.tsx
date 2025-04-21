@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { View, StyleSheet, Text, FlatList, Modal } from "react-native";
+import { View, StyleSheet, Text, FlatList, Modal, Alert } from "react-native";
 
 import { database } from './src/firebaseConfig';
 import { DataSnapshot, onValue, ref } from "firebase/database";
@@ -18,6 +18,7 @@ import themes from './src/global/themes';
 import { Button } from './src/components/Button';
 import { Cards } from './src/components/Cards';
 import { Form } from './src/components/Form';
+import { Details } from './src/components/Details';
 
 type Registro = {
   id: string;
@@ -28,7 +29,9 @@ type Registro = {
 
 export default function App() {
   const [ visible, setVisible ] = useState(false);
+  const [ visibleOne, setVisibleOne ] = useState(false);
   const [carregamento, setCarregamento] = useState<Registro[]>([])
+  const [id, setId] = useState("");
   
 
   const [loadedFonts] = useFonts({
@@ -37,18 +40,23 @@ export default function App() {
     NationalPark_700Bold
   })
 
+  function openModalDelUp(id: string){
+    setVisibleOne(true);
+    setId(id);
+  }
+
   useEffect(()=>{
     const buscaRef = ref(database, 'apontamento/meu-registro');
 
     const unsubscribe = onValue( buscaRef, (snapshot) => {
       const data = snapshot.val();
+      const id = Object.keys(data);
       const lista = Object.entries(data).map(([id, item]: [string, any]) => ({
         id,
         nome: item.nome,
         dado: item.dado,
         data: item.data,
       }));
-  
       setCarregamento(lista);
     })
 
@@ -85,7 +93,7 @@ export default function App() {
       <View style={styles.areaCard}>
         <FlatList
           data={carregamento}
-          renderItem={({item}) => <Cards date={ item }/>}
+          renderItem={({item}) => <Cards onPress={() => openModalDelUp(item.id)} date={ item }/>}
           ListEmptyComponent={
             <Text style={{ fontSize: 16, color: themes.colors.text, textAlign: 'center' }}>
                 Nenhum cadastro feito ainda.
@@ -102,6 +110,19 @@ export default function App() {
       >
         <View style={styles.areaModal}>
           <Form onPress={() => setVisible(false)} />
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={visibleOne}
+      >
+        <View style={styles.areaModal}>
+          <Details 
+              onPress={() => setVisibleOne(false)}
+              idMembers={id}
+          />
         </View>
       </Modal>
     </View>
