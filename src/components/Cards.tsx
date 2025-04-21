@@ -24,9 +24,9 @@ export function Cards( {date, onPress} : Props ) {
         <TouchableOpacity onPress={() => onPress(date.id)}>
             <View style={cards.areaCards} >
                 <View>
-                    <Text style={[cards.dataTime, { maxWidth: 100 }]} >{date.nome}</Text>
+                    <Text style={cards.dataTime} >{date.nome}</Text>
                     <Text 
-                        style={cards.dateCards}
+                        style={[cards.dateCards, { maxWidth: 200 }]}
                         numberOfLines={1}
                         ellipsizeMode="tail"
                     >{date.dado}</Text>
